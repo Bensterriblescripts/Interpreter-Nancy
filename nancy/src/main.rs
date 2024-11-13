@@ -3,7 +3,7 @@ use std::io::prelude::*;
 
 fn main() {
     let path = "C:\\Repositories\\Interpreter-Nancy\\nancy\\test.na";
-    let newline;
+    let newline = "\n";
     let text;
 
     // Extract Text
