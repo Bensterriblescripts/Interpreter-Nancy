@@ -83,7 +83,7 @@ fn main() -> Result<(), Error> {
                 println!("Found a bool declaration on line {}", linenumber);
                 if caps["bool"].contains("true") {
                     variables.push(Variable {
-                        name: caps["name"].parse().unwrap(),
+                        name: String::from(&caps["name"]),
                         var_type: String::from("Boolean"),
                         scope: 0,
                         data: Types::Boolean(true),
@@ -91,7 +91,7 @@ fn main() -> Result<(), Error> {
                 }
                 else if caps["bool"].contains("false") {
                     variables.push(Variable {
-                        name: caps["name"].parse().unwrap(),
+                        name: String::from(&caps["name"]),
                         var_type: String::from("Boolean"),
                         scope: 0,
                         data: Types::Boolean(false),
@@ -101,7 +101,7 @@ fn main() -> Result<(), Error> {
             else if let Some(caps) = re_int.captures(line) {
                 println!("Found an integer declaration on line {}", linenumber);
                 variables.push(Variable {
-                    name: caps["name"].parse().unwrap(),
+                    name: String::from(&caps["name"]),
                     var_type: String::from("Integer"),
                     scope: 0,
                     data: Types::Integer(caps["int"].parse().unwrap()),
@@ -110,7 +110,7 @@ fn main() -> Result<(), Error> {
             else if let Some(caps) = re_float.captures(line) {
                 println!("Found a float declaration on line {}", linenumber);
                 variables.push(Variable {
-                    name: caps["name"].into_string(),
+                    name: String::from(&caps["name"]),
                     var_type: String::from("Float"),
                     scope: 0,
                     data: Types::Float(caps["float"].parse().unwrap()),
@@ -119,7 +119,7 @@ fn main() -> Result<(), Error> {
             else if let Some(caps) = re_string.captures(line) {
                 println!("Found a string declaration on line {}", linenumber);
                 variables.push(Variable {
-                    name: caps["name"].parse().unwrap(),
+                    name: String::from(&caps["name"]),
                     var_type: String::from("String"),
                     scope: 0,
                     data: Types::String(caps["string"].parse().unwrap()),
