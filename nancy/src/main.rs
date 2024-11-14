@@ -48,19 +48,25 @@ fn main() -> Result<(), Error> {
     let mut variables: Vec<Variable> = Vec::new();
     let mut conditions: Vec<Condition> = Vec::new();
 
+    // Compile Regex - Single Word Types
+    let re_string = Regex::new(r#"\s*"(?<string>.*)""#)?;
+    let re_variable = Regex::new(r"\s*(?<varible>\w+)")?;
+    let re_bool = Regex::new(r"\s*(?<bool>true|false)")?;
+    let re_float = Regex::new(r"\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?;
+    let re_int = Regex::new(r"\s*(?<int>\d+)")?;
+
     // Compile Regex - Variable Declarations
     let re_is = Regex::new(r"is")?; // is (assigning a variable)
     let re_are = Regex::new(r"are")?; // are (assigning an array)
+    // Compile Regex - Assignment Types
+    let re_assignbool = Regex::new(r"(?i)\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
+    let re_assignint = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<int>\d+)$")?; // Any number (excludes digits)
+    let re_assignfloat = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?; // Any number with digits
+    let re_assignstring = Regex::new(r#"\s*(?<name>\w+)\s*is\s*"(?<string>.*)""#)?; // Any collection of characters
 
     // Compile Regex - Conditions
-    let re_ifequals = Regex::new(r"(?i)\s.*(if|else if)\s.*(?<left>\w+)\s*(is|equals)\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
+    let re_ifequals = Regex::new(r"(?i)\s.*(if|else if)\s*(?<left>\d+|\d+.\d+|true|false|.*)\s*(is|equals)\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
     let re_ifnotequals = Regex::new(r"does not equal")?; // does not equal (conditional negative match)
-
-    // Compile Regex - Types
-    let re_bool = Regex::new(r"(?i)\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
-    let re_int = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<int>\d+)$")?; // Any number (excludes digits)
-    let re_float = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?; // Any number with digits
-    let re_string = Regex::new(r#"\s*(?<name>\w+)\s*is\s*"(?<string>.*)""#)?; // Any collection of characters
 
     // Extract Text
     match open_file(path) {
@@ -79,7 +85,7 @@ fn main() -> Result<(), Error> {
 
         // Variable Assignments
         if re_is.is_match(line) {
-            if let Some(caps) = re_bool.captures(line) {
+            if let Some(caps) = re_assignbool.captures(line) {
                 println!("Found a bool declaration on line {}", linenumber);
                 if caps["bool"].contains("true") {
                     variables.push(Variable {
@@ -98,7 +104,7 @@ fn main() -> Result<(), Error> {
                     });
                 }
             }
-            else if let Some(caps) = re_int.captures(line) {
+            else if let Some(caps) = re_assignint.captures(line) {
                 println!("Found an integer declaration on line {}", linenumber);
                 variables.push(Variable {
                     name: String::from(&caps["name"]),
@@ -107,7 +113,7 @@ fn main() -> Result<(), Error> {
                     data: Types::Integer(caps["int"].parse().unwrap()),
                 });
             }
-            else if let Some(caps) = re_float.captures(line) {
+            else if let Some(caps) = re_assignfloat.captures(line) {
                 println!("Found a float declaration on line {}", linenumber);
                 variables.push(Variable {
                     name: String::from(&caps["name"]),
@@ -116,13 +122,13 @@ fn main() -> Result<(), Error> {
                     data: Types::Float(caps["float"].parse().unwrap()),
                 });
             }
-            else if let Some(caps) = re_string.captures(line) {
+            else if let Some(caps) = re_assignstring.captures(line) {
                 println!("Found a string declaration on line {}", linenumber);
                 variables.push(Variable {
                     name: String::from(&caps["name"]),
                     var_type: String::from("String"),
                     scope: 0,
-                    data: Types::String(caps["string"].parse().unwrap()),
+                    data: Types::String(String::from(&caps["string"])),
                 });
             }
         }
@@ -135,16 +141,46 @@ fn main() -> Result<(), Error> {
 
         // Equals
         if let Some(caps) = re_ifequals.captures(line).or_else(|| re_ifequals.captures(line)) {
-            println!("Identified condition on line {}", linenumber);
+            println!("Identified condition on line {}\nLeft variable, {}, Right variable: {}", linenumber, &caps["left"], &caps["right"]);
 
-            // Determine Type
-            if let Some(caps) = re_bool.captures(&caps["left"]) {
-                println!("Found a bool on one of the conditions {}", linenumber);
-                if caps["bool"].contains("true") {
-                }
-                else if caps["bool"].contains("false") {
-                }
+            // 0 - Var, 1 - Bool, 2 - Int, 3 - Float, 4 - String
+            let mut lefttype: i8 = 0;
+            let mut righttype: i8 = 0;
+
+            // Left Argument
+            if let Some(caps) = re_variable.captures(&caps["left"]) {
+                println!("Left assignment is a variable name");
+                // Iterate through the existing variables to check if it exists
             }
+            else if let Some(caps) = re_string.captures(&caps["left"]) {
+                println!("Left assignment is a string");
+                lefttype = 4;
+            }
+            else if let Some(caps) = re_bool.captures(&caps["left"]) {
+                println!("Left assignment is a bool");
+                lefttype = 1
+            }
+
+            // Right Argument
+            if let Some(caps) = re_variable.captures(&caps["left"]) {
+                println!("Left assignment is a variable name");
+                // Iterate through the existing variables to check if it exists
+            }
+            else if let Some(caps) = re_string.captures(&caps["left"]) {
+                println!("Left assignment is a string");
+                righttype = 4;
+            }
+            else if let Some(caps) = re_bool.captures(&caps["left"]) {
+                println!("Left assignment is a bool");
+                righttype = 1
+            }
+
+            // Only String-Int/Floats Can Mismatch
+            if lefttype != righttype {
+
+            }
+
+            
 
             let leftvar: &Variable;
             let rightvar: &Variable;
