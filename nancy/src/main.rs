@@ -110,7 +110,7 @@ fn main() -> Result<(), Error> {
             else if let Some(caps) = re_float.captures(line) {
                 println!("Found a float declaration on line {}", linenumber);
                 variables.push(Variable {
-                    name: caps["name"].parse().unwrap(),
+                    name: caps["name"].into_string(),
                     var_type: String::from("Float"),
                     scope: 0,
                     data: Types::Float(caps["float"].parse().unwrap()),
@@ -138,7 +138,7 @@ fn main() -> Result<(), Error> {
             println!("Identified condition on line {}", linenumber);
 
             // Determine Type
-            if let Some(caps) = re_bool.captures(caps["left"].parse().unwrap()) {
+            if let Some(caps) = re_bool.captures(&caps["left"]) {
                 println!("Found a bool on one of the conditions {}", linenumber);
                 if caps["bool"].contains("true") {
                 }
