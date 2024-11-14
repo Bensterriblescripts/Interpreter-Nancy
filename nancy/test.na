@@ -1,2 +1,10 @@
-variable = 0
-variable_string = hello
+variable is 0
+variable_float is 0.0
+variable_string is hello there!
+variable_bool is false
+elements are james, joan, jeremy
+
+if variable equals 0
+    variable_bool is true
+or if variable equals james
+    variable_bool is false
