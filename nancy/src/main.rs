@@ -53,15 +53,14 @@ fn main() -> Result<(), Error> {
     let re_are = Regex::new(r"are")?; // are (assigning an array)
 
     // Compile Regex - Conditions
-    let re_ifequals = Regex::new(r"\s*(?<left>\w+)\s*is\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
-    let re_ifis = Regex::new(r"\s*(?<left>\w+)\s*is\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
-    let re_notequals = Regex::new(r"does not equal")?; // does not equal (conditional negative match)
+    let re_ifequals = Regex::new(r"(?i)\s.*(if|else if)\s.*(?<left>\w+)\s*(is|equals)\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
+    let re_ifnotequals = Regex::new(r"does not equal")?; // does not equal (conditional negative match)
 
     // Compile Regex - Types
-    let re_bool = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
+    let re_bool = Regex::new(r"(?i)\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
     let re_int = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<int>\d+)$")?; // Any number (excludes digits)
     let re_float = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?; // Any number with digits
-    let re_string = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<string>.*)")?; // Any collection of characters
+    let re_string = Regex::new(r#"\s*(?<name>\w+)\s*is\s*"(?<string>.*)""#)?; // Any collection of characters
 
     // Extract Text
     match open_file(path) {
@@ -135,11 +134,31 @@ fn main() -> Result<(), Error> {
         /* Condition */
 
         // Equals
-        if let Some(caps) = re_ifis.captures(line).or_else(|| re_ifequals.captures(line)) {
+        if let Some(caps) = re_ifequals.captures(line).or_else(|| re_ifequals.captures(line)) {
+            println!("Identified condition on line {}", linenumber);
 
-            if variables[name].contains(["left"].parse.unwrap()) {
-
+            // Determine Type
+            if let Some(caps) = re_bool.captures(caps["left"].parse().unwrap()) {
+                println!("Found a bool on one of the conditions {}", linenumber);
+                if caps["bool"].contains("true") {
+                }
+                else if caps["bool"].contains("false") {
+                }
             }
+
+            let leftvar: &Variable;
+            let rightvar: &Variable;
+            //
+            // // Left Variable Exists
+            // if let Some(index) = variables.iter().position(|v| v.name.contains(caps["left"].parse().unwrap())) {
+            //     leftvar = &variables[index];
+            //     println!("The left variable exists")
+            // }
+            // // Right Variable Exists
+            // if let Some(index) = variables.iter().position(|v| v.name.contains(caps["right"].parse().unwrap())) {
+            //     rightvar = &variables[index];
+            //     println!("The right variable exists");
+        }
 
             // conditions.push(Condition {
             //     position: 0,
@@ -147,7 +166,6 @@ fn main() -> Result<(), Error> {
             //     right: ,
             //     condition_type:
             // });
-        }
         // Not Equal
         else if let Some(caps) = re_ifequals.captures(line) {
             println!("Found an if-equals on line {}", linenumber);
