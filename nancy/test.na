@@ -8,3 +8,5 @@ if variable equals 0
     variable_bool is true
 or if variable equals "james"
     variable_bool is false
+
+// 
