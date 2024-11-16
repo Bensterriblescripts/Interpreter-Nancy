@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::process::exit;
 use regex::{Error, Regex};
+use std::time::{Instant};
 
 #[derive(Debug)]
 struct Scopes {
@@ -46,39 +48,42 @@ struct Condition {
 }
 
 fn main() -> Result<(), Error> {
+    let start = Instant::now();
     let path = "C:\\Repositories\\Interpreter-Nancy\\nancy\\test.na";
     let _newline = "\n";
     let text;
 
-    // Store Created Variables
+    // File Specifics
     let mut variables: Vec<Variable> = Vec::new();
     let mut conditions: Vec<Condition> = Vec::new();
+    let mut language = "rust";
+    let mut programtype: i8;
 
     // Compile Regex - Blocks
-    let re_program = Regex::new(r"new\s*(?<program>\w+)\s*-\s*(?<programtype>\w+)")?;
+    let re_program = Regex::new(r"new\s*(?<programtype>\w+)\s*-\s*(?<programname>\w+)")?;
 
     // Compile Regex - Single Word Types
-    let re_string = Regex::new(r#"\s*"(?<string>.*)""#)?;
-    let re_variable = Regex::new(r"\s*(?<varible>\w+)")?;
-    let re_bool = Regex::new(r"\s*(?<bool>true|false)")?;
-    let re_float = Regex::new(r"\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?;
-    let re_int = Regex::new(r"\s*(?<int>\d+)")?;
+    // let re_string = Regex::new(r#"\s*"(?<string>.*)""#)?;
+    // let re_variable = Regex::new(r"\s*(?<varible>\w+)")?;
+    // let re_bool = Regex::new(r"\s*(?<bool>true|false)")?;
+    // let re_float = Regex::new(r"\s*(?<float>(?:0|[1-9]\d*)\.\d+)")?;
+    // let re_int = Regex::new(r"\s*(?<int>\d+)")?;
 
     // Compile Regex - Variable Declarations
-    let re_assignvar = Regex::new(r"(?<variable>\w+)\s*(equals|=|==|is)(?<value>\w+)\s*(\d+|\d+.\d+|true|false|.*)")?; // have (assigning a variable)
+    let re_assignvar = Regex::new(r"(?<variable>\w+)\s*(equals|=|is)\s*(?<value>\w+)\s*(\d+|\d+.\d+|true|false|.*)")?; // have (assigning a variable)
     let re_allocatearr = Regex::new(r"contain|store|contains|stores")?; // contain (assigning an array)
     // Compile Regex - Assignment Types
-    let re_assignbool = Regex::new(r"(?i)\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
-    let re_assignint = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<int>\d+)$")?; // Any number (excludes digits)
-    let re_assignfloat = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<float>(?:0|[1-9]\d*)\.\d +)")?; // Any number with digits
-    let re_assignstring = Regex::new(r#"\s*(?<name>\w+)\s*is\s*"(?<string>.*)""#)?; // Any collection of characters
+    // let re_assignbool = Regex::new(r"(?i)\s*(?<name>\w+)\s*is\s*(?<bool>true|false)")?; // Any word equal to true or false
+    // let re_assignint = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<int>\d+)$")?; // Any number (excludes digits)
+    // let re_assignfloat = Regex::new(r"\s*(?<name>\w+)\s*is\s*(?<float>(?:0|[1-9]\d*)\.\d +)")?; // Any number with digits
+    // let re_assignstring = Regex::new(r#"\s*(?<name>\w+)\s*is\s*"(?<string>.*)""#)?; // Any collection of characters
 
     // Compile Regex - Conditions
-    let re_if = Regex::new(r"(?i)\s.*(if|else if|is|or is)\s*(?<left>\d+|\d+.\d+|true|false|\w+)\s*(?<operator>(is|equals|==|===|!=|!==|greater than|less than|greater than or equal to|less than or equal to|>=|>|<=|<))\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
+    let re_if = Regex::new(r"(?i)\s.*(if|else if|is|or is)\s*(?<left>\d+|\d+.\d+|true|false|\w+)\s*(?<operator>(is|==|===|!=|!==|greater than|less than|greater than or equal to|less than or equal to|>=|>|<=|<))\s*(?<right>\d+|\d+.\d+|true|false|.*)")?; // equals (conditional match)
 
     // Compile Regex - Loops
-    let re_loopwhile = Regex::new(r"\s*while(?<left>\d+|\d+.\d+|true|false|.*)\s*(?<operator>>|>=|<|<=|=|==|===|is|is not)\s*(?<right>\d+|\d+.\d+|true|false|.*)");
-    let re_looprun = Regex::new(r"\s*run\s*(?<function>\w+)\s*(?<iter>\d+)\s*times"); // run function 15 times
+    let re_loopwhile = Regex::new(r"while\s*(?<left>\d+|\d+.\d+|true|false|.*)\s*(?<operator>>|>=|<|<=|=|==|===|is|is not)\s*(?<right>\d+|\d+.\d+|true|false|.*)")?;
+    let re_looprun = Regex::new(r"run\s*(?<iter>\d+)\s*times")?; // run function 15 times
 
     // TODO: Convert document to utf8
 
@@ -88,28 +93,30 @@ fn main() -> Result<(), Error> {
             text = contents;
             println!("\n{}\n", text);
         },
-        Err(error) => panic!("Error opening file: {}", error),
+        Err(error) => panic!("Error opening file: {}\n", error),
     }
 
     // TODO: Change all stored characters to lowercase
 
     // Iterate Through
-    let mut linenumber: i32 = 1;
+    let mut linenumber: i32 = 0;
     for line in text.lines() {
-
-        // 0 - Comment, 1 - Variable, 2 - Condition, 3 - Loop, 4 - Function, 10 - Program
-        let mut linetype: i8 = -1;
+        linenumber += 1;
 
         // First Character
         for first in line.chars() {
             if first == ' ' { continue; }
             if first == '/' { // Comment
-                linetype = 0;
                 break;
             }
             if first == 'n' { // Program
                 if let Some(caps) = re_program.captures(line) {
-                    new_program(caps, linenumber);
+                    programtype = new_program(&caps, linenumber);
+                    if programtype == 0 {
+                        let errormessage = incorrect_program(&caps["programtype"]);
+                        println!("Line {}: {}",linenumber, errormessage);
+                        exit(0);
+                    }
                     break;
                 }
             }
@@ -121,20 +128,27 @@ fn main() -> Result<(), Error> {
             }
             if first == 'w' || first == 'r' { // Loop (while/run) {
                 if let Some(caps) = re_loopwhile.captures(line) {
-                    new_loop(caps, linenumber);
+                    new_whileloop(caps, linenumber);
+                    break;
+                }
+                if let Some(caps) = re_looprun.captures(line) {
+                    new_forloop(caps, linenumber);
+                    break;
                 }
             }
-
-            // Check variables
-        }
-        linenumber += 1;
-
-        // End on irrelevant
-        if linetype == -1 || linetype == 0 {
-            continue;
+            break;
         }
 
-        /* Variable */
+        // Check variables
+        if let Some(caps) = re_assignvar.captures(line) {
+            new_variable(caps, linenumber);
+        }
+
+        // TODO: Unrecognised Line Entry - Record/Error This
+        continue;
+    }
+
+    /* Variable */
     //
     //     // Variable Assignments
     //     if re_is.is_match(line) {
@@ -157,7 +171,9 @@ fn main() -> Result<(), Error> {
     //                 });
     //             }
     //         }
-    }
+
+    let duration = start.elapsed();
+    println!("\nTime Taken: {:?}", duration);
 
     Ok(())
 }
@@ -168,13 +184,35 @@ fn open_file(path: &str) -> Result<String, std::io::Error> {
     Ok(contents)
 }
 
-fn new_program(line: regex::Captures, linenumber: i32) {
-    println!("Created a new program on line: {}\nProgram Type: {}, Program Name: {}\n", linenumber, &line["program"], &line["programtype"]);
+fn new_program(line: &regex::Captures, linenumber: i32) -> i8 {
+    println!("Created a new program on line: {}\nProgram Type: {}, Program Name: {}\n", linenumber, &line["programtype"], &line["programname"]);
+    if &line["programtype"] == "console" {
+        return 1;
+    }
+    return 0;
 }
+
+// Parsing
 fn new_condition(line: regex::Captures, linenumber: i32) {
     println!("Found a condition on line: {}\nLeft Variable: {}, Right Variable: {}, Operator: {}\n", linenumber, &line["left"], &line["right"], &line["operator"]);
 }
-fn new_loop(line: regex::Captures, linenumber: i32) {
+fn new_whileloop(line: regex::Captures, linenumber: i32) {
+    println!("Found a while loop on line {}\nLeft: {}, Operator: {}, Right: {}", linenumber, &line["left"], &line["operator"], &line["right"]);
+}
+fn new_forloop(line: regex::Captures, linenumber: i32) {
+    println!("Found a for loop on line {}\nIterates {} times.", linenumber, &line["iter"]);
+}
+fn new_variable(line: regex::Captures, linenumber: i32) {
+    println!("Found a variable assignment on line {}\nName: {}, Value: {}\n", linenumber, &line["variable"], &line["value"]);
+}
 
+// Error Reporting
+fn incorrect_program(programtype: &str) -> &'static str {
+    let re_console = Regex::new(r"c?onsol?e?").unwrap();
+    if re_console.is_match(programtype) {
+        return "Incorrect Program Type.\n - Did you mean console?\n";
+    }
+
+    "Unknown Program Type\n - Options available are: console\n"
 }
 

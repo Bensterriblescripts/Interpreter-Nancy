@@ -1,11 +1,11 @@
-new console - Testing
+new c - Testing
 
 person = James
 array contains james, joan, jeremy
 
-if variable equals 0
-    variable_bool is true
-or if variable equals "james"
-    variable_bool is false
+if variable is 0
+    variable_bool = true
+or if variable is "james"
+    variable_bool = false
 
 run 15 times
