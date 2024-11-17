@@ -185,7 +185,7 @@ fn open_file(path: &str) -> Result<String, std::io::Error> {
 }
 
 fn new_program(line: &regex::Captures, linenumber: i32) -> i8 {
-    println!("Created a new program on line: {}\nProgram Type: {}, Program Name: {}\n", linenumber, &line["programtype"], &line["programname"]);
+    println!("New program on line: {}\nProgram Type: {}, Program Name: {}\n", linenumber, &line["programtype"], &line["programname"]);
     if &line["programtype"] == "console" {
         return 1;
     }
@@ -212,7 +212,6 @@ fn incorrect_program(programtype: &str) -> &'static str {
     if re_console.is_match(programtype) {
         return "Incorrect Program Type.\n - Did you mean console?\n";
     }
-
     "Unknown Program Type\n - Options available are: console\n"
 }
 
