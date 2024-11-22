@@ -141,7 +141,25 @@ fn main() -> Result<(), Error> {
 
         // Check variables
         if let Some(caps) = re_assignvar.captures(line) {
-            new_variable(caps, linenumber);
+            let found_var = variables.iter().find(|var| var.name == String::from(&caps["variable"]));
+            match found_var {
+
+                // Update Existing Variable
+                Some(var) => println!("Found reassignment of variable: {} on line {}\n", &caps["variable"], linenumber),
+
+                // Assign New Variable
+                None => {
+                    if &caps["value"].to_lowercase() == "true" || &caps["value"].to_lowercase() == "false" {
+                        println!("Found new Boolean variable {} on line {}\n", &caps["variable"], linenumber);
+                    }
+                    variables.push(Variable {
+                        name: String::from(&caps["variable"]),
+                        var_type: String::from("Boolean"),
+                        scope: 0,
+                        data: Type::Boolean(true),
+                    })
+                }
+            }
         }
 
         // TODO: Unrecognised Line Entry - Record/Error This
@@ -201,9 +219,6 @@ fn new_whileloop(line: regex::Captures, linenumber: i32) {
 }
 fn new_forloop(line: regex::Captures, linenumber: i32) {
     println!("Found a for loop on line {}\nIterates {} times.", linenumber, &line["iter"]);
-}
-fn new_variable(line: regex::Captures, linenumber: i32) {
-    println!("Found a variable assignment on line {}\nName: {}, Value: {}\n", linenumber, &line["variable"], &line["value"]);
 }
 
 // Error Reporting
